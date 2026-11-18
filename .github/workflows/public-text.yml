@@ -1,0 +1,45 @@
+name: Public text and DCO
+on:
+  workflow_call:
+    secrets:
+      PUBLIC_TEXT_DENY:
+        required: false
+permissions:
+  contents: read
+jobs:
+  public-text-and-dco:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out proposed history
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: proposed
+      - name: Check out trusted checker
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          repository: citrustudio/.github
+          ref: 3361a9ada2ceb94b2d25ace8648b629a059ca290
+          persist-credentials: false
+          path: checker
+      - name: Inspect history and pull request
+        working-directory: proposed
+        env:
+          DENY_TERMS: ${{ secrets.PUBLIC_TEXT_DENY }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -eu
+          if [ "$IS_FORK" = true ]; then
+            set -- --public-only
+          else
+            set -- --deny-env DENY_TERMS
+          fi
+          python3 ../checker/scripts/public_text.py "$@" --base "$BASE_SHA" --head "$HEAD_SHA" --pr-event "$GITHUB_EVENT_PATH" --dco-repo "$REPOSITORY"
