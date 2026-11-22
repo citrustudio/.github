@@ -23,7 +23,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           repository: citrustudio/.github
-          ref: 68b8cb6191336aa2f32a3f4c6afabbe435b5fb3b
+          ref: main
           persist-credentials: false
           path: checker
       - name: Inspect history and pull request
