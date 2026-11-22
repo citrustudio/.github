@@ -83,7 +83,17 @@ def commit_payload(sha):
     if re.search(rb'^(?:GIT binary patch$|Binary files )', patch, re.M):
         raise Refusal('binary change requires review')
     # Include paths in diff headers and every added line, not removed/context lines.
-    added = b'\n'.join(line for line in patch.splitlines() if line.startswith((b'+', b'diff --git ')))
+    lines = []
+    in_hunk = False
+    for line in patch.splitlines():
+        if line.startswith(b'diff --git '):
+            in_hunk = False
+            lines.append(line)
+        elif line.startswith(b'@@ '):
+            in_hunk = True
+        elif line.startswith(b'+'):
+            lines.append(line[1:] if in_hunk else line)
+    added = b'\n'.join(lines)
     names = git('diff-tree', '--root', '-m', '--no-commit-id', '--no-renames',
                 '--name-only', '-z', sha).replace(b'\0', b'\n')
     return message + b'\n' + names + b'\n' + added
