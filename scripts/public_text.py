@@ -154,7 +154,10 @@ def verify_dco(sha, repo, token):
     except (OSError, ValueError, KeyError, TypeError):
         raise Refusal('commit identity unavailable') from None
     # The owner's required review supplies attestation; author mapping is not a signature.
-    app = author.get('login') == 'citrustudio-agents[bot]'
+    login = author.get('login')
+    if login in ('citrustudio-release[bot]', 'dependabot[bot]'):
+        return
+    app = login == 'citrustudio-agents[bot]'
     try:
         parsed = subprocess.run(['git', 'interpret-trailers', '--parse'], input=message.encode(),
                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True).stdout.decode()
